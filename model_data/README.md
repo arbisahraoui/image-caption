@@ -4,4 +4,5 @@ For that matter, you will find the
 
 * **features.pkl**: which contain the features extracted from the images using VGG16 Model.
 * **captions.txt**: Contains the text features.
+* **weights of the model**
 
