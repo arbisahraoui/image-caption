@@ -306,7 +306,7 @@ def create_sequences(tokenizer, max_length, captions_list, image):
 
 
 # Data generator, intended to be used in a call to model.fit_generator()
-def data_generator(images, captions, tokenizer, max_length, batch_size, random_seed):
+def data_generator(images, captions, tokenizer, max_len, batch_size, random_seed):
 	# Setting random seed for reproducibility of results
 	random.seed(random_seed)
 	# Image ids
@@ -328,7 +328,7 @@ def data_generator(images, captions, tokenizer, max_length, batch_size, random_s
 			captions_list = captions[image_id]
 			# Shuffle captions list
 			random.shuffle(captions_list)
-			input_img, input_sequence, output_word = create_sequences(tokenizer, max_length, captions_list, image)
+			input_img, input_sequence, output_word = create_sequences(tokenizer, max_len, captions_list, image)
 			# Add to batch
 			for j in range(len(input_img)):
 				input_img_batch.append(input_img[j])
@@ -337,35 +337,6 @@ def data_generator(images, captions, tokenizer, max_length, batch_size, random_s
 		_count = _count + batch_size
 		yield [[np.array(input_img_batch), np.array(input_sequence_batch)], np.array(output_word_batch)]
 
-
-# in case of not working with data generator
-def generating_data(images, captions, tokenizer, max_len, random_seed):
-
-    data = []
-    
-    # Random seed
-    random.seed(random_seed)
-
-    # Image ids
-    image_ids = list(captions.keys())
-
-    for id_image in image_ids:
-         
-        # Retrieve the image features
-        img_features = images[id_image][0]
-
-        # Retrieve the captions list
-        captions_list = captions[id_image]
-
-        # SHuffle captions list
-        random.shuffle(captions_list)
-
-        # Create the inputs lists
-        input_img, input_sequence, output_word = create_sequences(tokenizer, max_len, captions_list, img_features)
-
-        data.append([[np.array(input_img), np.array(input_sequence)], np.array(output_word)])
-    
-    return data
 
 
 
