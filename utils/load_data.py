@@ -5,7 +5,8 @@ from pickle import load
 from keras.preprocessing.text import Tokenizer # Import the tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from keras.utils import to_categorical
-from numpy import array
+import random
+import numpy as np
 
 """
 
@@ -20,7 +21,7 @@ def getAllCaptions(config, is_config=True):
 
     dataset = {}
 
-    with open('.'+config['captions_path'], 'r') as file:
+    with open(config['captions_path'], 'r') as file:
         captions = file.read().split('\n')
     captions.pop()   # The last element is ''
 
@@ -65,7 +66,7 @@ def load_data(config, split):   # split must be dev/test/train in lower that hel
     dataset = {}
 
     # The image filenames for the split
-    path = '../dataset/Flickr8k_text/Flickr_8k.'+split.lower()+ 'Images.txt'
+    path = './dataset/Flickr8k_text/Flickr_8k.'+split.lower()+ 'Images.txt'
 
     # Get the split images
     with open(path, 'r') as file:
@@ -250,7 +251,7 @@ def max_length(descriptions):
 
 
 # create sequences of images, input sequences and output words for an image
-def create_sequences(tokenizer, max_length, descriptions, photos, vocab_size):
+"""def create_sequences(tokenizer, max_length, descriptions, photos, vocab_size):
     X1, X2, y = list(), list(), list()
     
     # walk through each image identifier
@@ -275,4 +276,98 @@ def create_sequences(tokenizer, max_length, descriptions, photos, vocab_size):
                 X2.append(in_seq)
                 y.append(out_seq)
     return array(X1), array(X2), array(y)
+
+"""
+# Create sequences of images, input sequences and output words for an image
+def create_sequences(tokenizer, max_length, captions_list, image):
+	# X1 : input for image features
+	# X2 : input for text features
+	# y  : output word
+	X1, X2, y = list(), list(), list()
+	vocab_size = len(tokenizer.word_index) + 1
+	# Walk through each caption for the image
+	for caption in captions_list:
+		# Encode the sequence
+		seq = tokenizer.texts_to_sequences([caption])[0]
+		# Split one sequence into multiple X,y pairs
+		for i in range(1, len(seq)):
+			# Split into input and output pair
+			in_seq, out_seq = seq[:i], seq[i]
+			# Pad input sequence
+			in_seq = pad_sequences([in_seq], maxlen=max_length)[0]
+			# Encode output sequence
+			out_seq = to_categorical([out_seq], num_classes=vocab_size)[0]
+			# Store
+			X1.append(image)
+			X2.append(in_seq)
+			y.append(out_seq)
+	return X1, X2, y
+
+
+
+# Data generator, intended to be used in a call to model.fit_generator()
+def data_generator(images, captions, tokenizer, max_length, batch_size, random_seed):
+	# Setting random seed for reproducibility of results
+	random.seed(random_seed)
+	# Image ids
+	image_ids = list(captions.keys())
+	_count=0
+	assert batch_size<= len(image_ids), 'Batch size must be less than or equal to {}'.format(len(image_ids))
+	while True:
+		if _count >= len(image_ids):
+			# Generator exceeded or reached the end so restart it
+			_count = 0
+		# Batch list to store data
+		input_img_batch, input_sequence_batch, output_word_batch = list(), list(), list()
+		for i in range(_count, min(len(image_ids), _count+batch_size)):
+			# Retrieve the image id
+			image_id = image_ids[i]
+			# Retrieve the image features
+			image = images[image_id][0]
+			# Retrieve the captions list
+			captions_list = captions[image_id]
+			# Shuffle captions list
+			random.shuffle(captions_list)
+			input_img, input_sequence, output_word = create_sequences(tokenizer, max_length, captions_list, image)
+			# Add to batch
+			for j in range(len(input_img)):
+				input_img_batch.append(input_img[j])
+				input_sequence_batch.append(input_sequence[j])
+				output_word_batch.append(output_word[j])
+		_count = _count + batch_size
+		yield [[np.array(input_img_batch), np.array(input_sequence_batch)], np.array(output_word_batch)]
+
+
+# in case of not working with data generator
+def generating_data(images, captions, tokenizer, max_len, random_seed):
+
+    data = []
+    
+    # Random seed
+    random.seed(random_seed)
+
+    # Image ids
+    image_ids = list(captions.keys())
+
+    for id_image in image_ids:
+         
+        # Retrieve the image features
+        img_features = images[id_image][0]
+
+        # Retrieve the captions list
+        captions_list = captions[id_image]
+
+        # SHuffle captions list
+        random.shuffle(captions_list)
+
+        # Create the inputs lists
+        input_img, input_sequence, output_word = create_sequences(tokenizer, max_len, captions_list, img_features)
+
+        data.append([[np.array(input_img), np.array(input_sequence)], np.array(output_word)])
+    
+    return data
+
+
+
+         
 
