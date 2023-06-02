@@ -1,14 +1,11 @@
 
 
 import numpy as np
-# Keras
-from keras.applications.inception_v3 import InceptionV3
 from keras.applications.vgg16 import VGG16
 from keras.models import Model
-from keras.layers import Input, Dense, Dropout, LSTM, Embedding, concatenate, RepeatVector, TimeDistributed, Bidirectional
+from keras.layers import Input, Dense, Dropout, LSTM, Embedding, concatenate
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tqdm import tqdm
-# To measure BLEU Score
 from nltk.translate.bleu_score import corpus_bleu
 
 
